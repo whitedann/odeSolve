@@ -9,19 +9,24 @@ class Pendulum():
     def __init__(self):
         self.l = 1.5
         self.g = 9.8
+        self.k = 1.0
+        self.m = 1.0
         self.init_state = [np.radians(45.0), 0]
-        self.time = np.arange(0, 30.0, 0.01)
+        self.init_state2 = [np.radians(-45.0), 0, np.radians(45.0), 0]
+        self.time = np.arange(0, 50.0, 0.01)
 
 
     def equation(self, y0,t):
-        theta, x = y0
-        f = [x, -(self.g/self.l)*sin(theta)]
+        theta, thetaDot = y0
+        f = [thetaDot, -(self.g/self.l)*sin(theta)]
         return f
 
     def equation2(self, y0, t):
-        theta, x = y0
-        f = [x, -(self.g/self.l)*theta]
-        return f
+        """""state=(theta, thetaDot, phi, phiDot)"""
+        theta, thetaDot, phi, phiDot = y0
+        dydx = [thetaDot, -1 * ((self.g / self.l) * sin(theta) + (self.k / self.m) * (theta - phi)),
+                phiDot, -1 * ((self.g / self.l) * sin(phi) + (self.k / self.m) * (theta - phi))]
+        return dydx
 
     def solve_ODE(self):
         self.state = odeint(self.equation, self.init_state, self.time)
@@ -30,10 +35,12 @@ class Pendulum():
         return (x, y)
 
     def solve_ODE2(self):
-        self.state2 = odeint(self.equation2, self.init_state, self.time)
-        x = sin(self.state2[:, 0])*self.l
-        y = -1*cos(self.state2[:, 0])*self.l
-        return (x, y)
+        self.state2 = odeint(self.equation2, self.init_state2, self.time)
+        x1 = sin(self.state2[:, 0])*self.l
+        y1 = -1*cos(self.state2[:, 0])*self.l
+        x2 = sin(self.state2[:, 2])*self.l
+        y2 = -1*cos(self.state2[:, 2])*self.l
+        return (x1,y1,x2,y2)
 
 
 
@@ -45,20 +52,10 @@ def init():
     return line, line2
 
 data = pend.solve_ODE()
-data2 = pend.solve_ODE2()
-
-for i in range (0,100):
-    print((data[0][i]**2 + data[1][i]**2)**(1/2), (data2[0][i]**2 + data2[1][i]**2)**(1/2))
-
 final = []
 final.append(data[0])
 final.append(data[1])
-final2 = []
-final2.append(data2[0])
-final2.append(data2[1])
-
 newdata = np.array(final)
-newdata2 = np.array(final2)
 
 
 fig = plt.figure()
@@ -68,15 +65,33 @@ line, = ax.plot([],[], 'o-')
 line2, = ax.plot([],[], 'o-')
 line3, = ax.plot([],[], 'o-')
 
+###
+data2 = pend.solve_ODE2()
+final2 = []
+final2.append(data2[0])
+final2.append(data2[1])
+final2.append(data2[2])
+final2.append(data2[3])
+newdata2 = np.array(final2)
 
-def animate(num, data1, data2, line, line2, line3):
+print(newdata2.shape)
+
+def animate2(num,data2,line,line2):
+    line.set_data([-1, data2[0, num] - 1], [0, data2[1, num]])
+    line2.set_data([1, data2[2, num] + 1], [0, data2[3, num]])
+    return line, line2
+###
+
+"""""
+def animate(num, data1, line, line2, line3):
     line.set_data([-1,data1[0,num]-1], [0,data1[1,num]])
     line2.set_data([1,data1[0,num]+1], [0,data1[1,num]])
     line3.set_data([data1[0,num]-1, data1[0,num]+1], [data1[1,num],data1[1,num]])
     return line, line2, line3
 
-ani = animation.FuncAnimation(fig, animate, interval=1, frames=1000, fargs=(newdata, newdata2, line, line2, line3), blit=True, init_func=init)
-
+ani = animation.FuncAnimation(fig, animate, interval=1, frames=1000, fargs=(newdata,  line, line2, line3), blit=True, init_func=init)
+"""""
+ani = animation.FuncAnimation(fig, animate2, interval=1, frames=5000, fargs=(newdata2,  line, line2), blit=True, init_func=init)
 plt.show()
 
 
