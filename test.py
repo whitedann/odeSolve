@@ -7,12 +7,12 @@ import matplotlib.animation as animation
 class Pendulum():
 
     def __init__(self):
-        self.l = 1.5
+        self.l = 1.0 
         self.g = 9.8
-        self.k = 1.0
+        self.k = 0.5 
         self.m = 1.0
         self.init_state = [np.radians(45.0), 0]
-        self.init_state2 = [np.radians(-45.0), 0, np.radians(45.0), 0]
+        self.init_state2 = [np.radians(-45.0), 0, np.radians(0.0), 0]
         self.time = np.arange(0, 50.0, 0.01)
 
 
@@ -24,8 +24,8 @@ class Pendulum():
     def equation2(self, y0, t):
         """""state=(theta, thetaDot, phi, phiDot)"""
         theta, thetaDot, phi, phiDot = y0
-        dydx = [thetaDot, -1 * ((self.g / self.l) * sin(theta) + (self.k / self.m) * (theta - phi)),
-                phiDot, -1 * ((self.g / self.l) * sin(phi) + (self.k / self.m) * (theta - phi))]
+        dydx = [thetaDot, (sin(theta)*(self.m*(self.l*thetaDot*thetaDot-self.g)-self.k*self.l)+self.k*self.l*sin(phi))/(self.m*self.l*cos(theta)) ,
+                phiDot, (sin(phi)*(self.m*(self.l*phiDot*phiDot-self.g)-self.k*self.l)+self.k*self.l*sin(theta))/(self.m*self.l*cos(theta))]
         return dydx
 
     def solve_ODE(self):
@@ -74,24 +74,24 @@ final2.append(data2[2])
 final2.append(data2[3])
 newdata2 = np.array(final2)
 
-print(newdata2.shape)
 
-def animate2(num,data2,line,line2):
+def animate2(num,data2,line,line2, line3):
     line.set_data([-1, data2[0, num] - 1], [0, data2[1, num]])
     line2.set_data([1, data2[2, num] + 1], [0, data2[3, num]])
-    return line, line2
+    line3.set_data([data2[0, num] -1, data2[2, num] + 1], [data2[1, num], data2[3, num]])
+    return line, line2, line3
 ###
 
-"""""
+
 def animate(num, data1, line, line2, line3):
     line.set_data([-1,data1[0,num]-1], [0,data1[1,num]])
     line2.set_data([1,data1[0,num]+1], [0,data1[1,num]])
     line3.set_data([data1[0,num]-1, data1[0,num]+1], [data1[1,num],data1[1,num]])
     return line, line2, line3
 
-ani = animation.FuncAnimation(fig, animate, interval=1, frames=1000, fargs=(newdata,  line, line2, line3), blit=True, init_func=init)
-"""""
-ani = animation.FuncAnimation(fig, animate2, interval=1, frames=5000, fargs=(newdata2,  line, line2), blit=True, init_func=init)
+#ani = animation.FuncAnimation(fig, animate, interval=1, frames=1000, fargs=(newdata,  line, line2, line3), init_func=init)
+
+ani = animation.FuncAnimation(fig, animate2, interval=1, frames=5000, fargs=(newdata2,  line, line2, line3), init_func=init)
 plt.show()
 
 
