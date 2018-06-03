@@ -76,6 +76,55 @@ class Pendulum():
         y2 = y1 + -1*cos(self.state3[:, 2])*self.l
         return (x1, y1, x2, y2)
 
+class doublePendulum():
+
+    def __init__(self,
+                 g = 9.8,
+                 L1 = 1.0,
+                 L2 = 1.0,
+                 M1 = 1.0,
+                 M2 = 1.0):
+
+        """initial state is (theta, z1, phi, z2) in degrees
+        where theta is the initial angle of the top rod, z1 is the """
+
+class coupledPendulum():
+
+    def __init__(self,
+                 g = 9.8,
+                 L1 = 2.0,
+                 L2 = 2.0,
+                 M1 = 5.0,
+                 M2 = 1.0,
+                 k = 2.5):
+
+        """initial state is (theta, thetaDot, phi, phiDot) in degrees
+        where theta is the initial angle of the left pendulum, thetaDot is the initial speed
+        of the left pendulum, and phi/phiDot is the same for the right pendulum"""
+        self.init_state = [np.radians(10.0), 0, np.radians(-10.0), 0]
+        self.params = (L1, L2, M1, M2, g, k)
+        self.time = np.arange(0, 50.0, 0.025)
+
+    def equation(self, y0,t):
+
+        (L1, L2, M1, M2, g, k) = self.params
+        theta, thetaDot, phi, phiDot = y0
+
+        dydx = [thetaDot, (sin(theta) * (M1 * (L1 * thetaDot * thetaDot - g) - k * L1) + k * L2 * sin(phi)) / (M1 * L1 * cos(theta)),
+                phiDot, (sin(phi) * (M2 * (L2 * phiDot * phiDot - g) - k * L2) + k * L1 * sin(theta)) / (M2 * L2 * cos(phi))]
+
+        return dydx
+
+    def solve_ODE(self):
+        self.state = odeint(self.equation, self.init_state, self.time)
+
+        """convert data into (x,y) coordinates"""
+        x1 = sin(self.state[:, 0])*self.params[0]
+        y1 = -1*cos(self.state[:, 0])*self.params[0]
+        x2 = sin(self.state[:, 2])*self.params[1]
+        y2 = -1*cos(self.state[:, 2])*self.params[1]
+        return (x1, y1, x2, y2)
+
 def init():
     ax.set_xlim(-4.1, 4.1)
     ax.set_ylim(-4.1, 4.1)
@@ -83,11 +132,12 @@ def init():
     return line, line2, line3
 
 pend = Pendulum()
+coupPend = coupledPendulum()
 fig = plt.figure()
 ax = fig.add_subplot(111)
 line, = ax.plot([],[], 'b-', lw=2)
 line2, = ax.plot([],[], 'b-',lw=2)
-line3, = ax.plot([],[], 'r:', marker='s', markerfacecolor='black', markersize=10.0)  
+line3, = ax.plot([],[], marker='o', markersize=8.0)
 
 #Single Pendulum
 data = pend.solve_ODE()
@@ -97,7 +147,7 @@ final.append(data[1])
 newdata = np.array(final)
 
 #Coupled Pendulum
-data2 = pend.solve_ODE2()
+data2 = coupPend.solve_ODE()
 final2 = []
 final2.append(data2[0])
 final2.append(data2[1])
@@ -136,9 +186,9 @@ def animateDoublePendulum(num, data3, line, line2):
 
 #ani = animation.FuncAnimation(fig, animateSinglePendulum, interval=1, frames=1000, fargs=(newdata,  line, line2, line3), init_func=init)
 
-#ani = animation.FuncAnimation(fig, animateCoupledPendulum, interval=1, frames=5000, fargs=(newdata2,  line, line2, line3), init_func=init)
+ani = animation.FuncAnimation(fig, animateCoupledPendulum, interval=1, frames=5000, fargs=(newdata2,  line, line2, line3), init_func=init)
 
-ani = animation.FuncAnimation(fig, animateDoublePendulum, interval=1, frames=600, fargs=(newdata3, line, line2), init_func=init)
+#ani = animation.FuncAnimation(fig, animateDoublePendulum, interval=1, frames=600, fargs=(newdata3, line, line2), init_func=init)
 
 plt.show()
 
