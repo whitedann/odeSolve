@@ -20,14 +20,8 @@ class Pendulum():
     def equation(self, y0,t):
         theta, thetaDot = y0
         f = [thetaDot, -(self.g/self.l)*sin(theta)]
-        return f
-
-    def equation2(self, y0, t):
-        """""state=(theta, thetaDot, phi, phiDot)"""
-        theta, thetaDot, phi, phiDot = y0
-        dydx = [thetaDot, (sin(theta)*(self.m*(self.l*thetaDot*thetaDot-self.g)-self.k*self.l)+self.k*self.l*sin(phi))/(self.m*self.l*cos(theta)) ,
-                phiDot, (sin(phi)*(self.m*(self.l*phiDot*phiDot-self.g)-self.k*self.l)+self.k*self.l*sin(theta))/(self.m*self.l*cos(theta))]
-        return dydx
+        g = [thetaDot, -(selg.g/self.l)*theta]
+        return f, g
 
     def equation3(self, y0, t):
         #state = (theta, z1, phi, z2)
@@ -60,14 +54,6 @@ class Pendulum():
         y = -1*cos(self.state[:, 0])*self.l
         return (x, y)
 
-    def solve_ODE2(self):
-        self.state2 = odeint(self.equation2, self.init_state2, self.time)
-        x1 = sin(self.state2[:, 0])*self.l
-        y1 = -1*cos(self.state2[:, 0])*self.l
-        x2 = sin(self.state2[:, 2])*self.l
-        y2 = -1*cos(self.state2[:, 2])*self.l
-        return (x1,y1,x2,y2)
-
     def solve_ODE3(self):
         self.state3 = odeint(self.equation3,self.init_state3, self.time)
         x1 = sin(self.state3[:, 0])*self.l
@@ -86,7 +72,31 @@ class doublePendulum():
                  M2 = 1.0):
 
         """initial state is (theta, z1, phi, z2) in degrees
-        where theta is the initial angle of the top rod, z1 is the """
+        where theta is the initial angle of the top rod, z1 the first derivative of theta, z2 is the first deriative of phi """
+        self.init_state = [np.radians(10.0), np.radians(0), np.radians(10.0), np.radians(0)]
+        self.params = (L1, L2, M1, M2, g)
+        self.time = np.arrage(0, 50.0, 0.025)
+
+    def equation(self, y0, t):
+
+        (L1, L2, M1, M2, g) = self.params
+        theta, z1, phi, z2 = y0
+
+        """definition for first order equations"""
+        thetaDot = z1
+        phiDot = z2
+         
+        delsin = np.sin(theta - phi)
+        delcos = np.cos(theta - phi)
+
+        dydx = [thetaDot,
+                -(M2 * L2 * phiDot**2 * delsin - (M1 + M2) * g * sin(theta))/(L1 * (M1 + M2) - M2 * L1 * delcos**2)
+                phiDot,
+                
+
+        return dydx
+
+        
 
 class coupledPendulum():
 
@@ -94,7 +104,7 @@ class coupledPendulum():
                  g = 9.8,
                  L1 = 2.0,
                  L2 = 2.0,
-                 M1 = 5.0,
+                 M1 = 1.0,
                  M2 = 1.0,
                  k = 2.5):
 
