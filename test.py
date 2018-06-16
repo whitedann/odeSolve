@@ -4,30 +4,44 @@ from scipy.integrate import odeint
 from numpy import sin, cos, sqrt
 import matplotlib.animation as animation
 
+
 class Pendulum():
 
-    def __init__(self):
-        self.l = 2.0 
-        self.g = 9.8
-        self.k = 2.5 
-        self.m = 1.0
-        self.init_state = [np.radians(45.0), 0]
-        self.init_state2 = [np.radians(45.0), 0, np.radians(4.0), 0]
-        self.init_state3 = [np.radians(90.0), 0, np.radians(10.0), 0]
-        self.time = np.arange(0, 50.0, 0.025)
-
+    def __init__(self,
+                 g = 9.8,
+                 L = 2.0):
+        
+        self.init_state = [np.radians(89.0), 0]
+        self.time = np.arange(0, 50.0, 0.025) 
+        self.g = g
+        self.L = L
 
     def equation(self, y0,t):
         theta, thetaDot = y0
-        f = [thetaDot, -(self.g/self.l)*sin(theta)]
-        #g = [thetaDot, -(self.g/self.l)*theta]
+        f = [thetaDot, -(self.g/self.L)*sin(theta)]
         return f
 
+    def equationApprox(self, y0, t):
+        theta, thetaDot = y0
+        g = [thetaDot, -(self.g/self.L)*theta]
+        return g
+
     def solve_ODE(self):
+       
+        """Without small-angle approximation"""
         self.state = odeint(self.equation, self.init_state, self.time)
-        x = sin(self.state[:, 0])*self.l
-        y = -1*cos(self.state[:, 0])*self.l
-        return (x, y)
+        x1 = sin(self.state[:, 0])*self.L
+        y1 = -1*cos(self.state[:, 0])*self.L
+
+        """With small-angle approximation:"""
+        self.state2 = odeint(self.equationApprox, self.init_state, self.time)
+        x2 = sin(self.state2[:, 0])*self.L
+        y2 = -1*cos(self.state2[:, 0])*self.L
+
+        return x1, y1, x2, y2
+
+    def getMax(self):
+        return np.degrees(self.init_state[0])
 
 
 class doublePendulum():
@@ -37,23 +51,19 @@ class doublePendulum():
                  L1 = 2.0,
                  L2 = 1.0,
                  M1 = 1.0,
-                 M2 = 2.0):
+                 M2 = 5.0):
 
         """initial state is (theta, z1, phi, z2) in degrees
         where theta is the initial angle of the top rod, z1 the first derivative of theta, z2 is the first deriative of phi """
-        self.init_state = [np.radians(90.0), np.radians(0), np.radians(90.0), np.radians(0)]
+        self.init_state = [np.radians(120.0), np.radians(0), np.radians(89.0), np.radians(0)]
         self.params = (L1, L2, M1, M2, g)
         self.time = np.arange(0, 50.0, 0.025)
 
     def equation(self, y0, t):
 
         (L1, L2, M1, M2, g) = self.params
-        theta, z1, phi, z2 = y0
+        theta, thetaDot, phi, phiDot = y0
 
-        """definition for first order equations"""
-        thetaDot = z1
-        phiDot = z2
-         
         delsin = sin(theta - phi)
         delcos = cos(theta - phi)
 
@@ -74,23 +84,22 @@ class doublePendulum():
         y2 = y1 + -1*cos(self.state[:, 2])*self.params[1]
 
         return x1, y1, x2, y2
-
-        
+       
 
 class coupledPendulum():
 
     def __init__(self,
                  g = 9.8,
-                 L1 = 2.0,
-                 L2 = 2.0,
+                 L1 = 1.5,
+                 L2 = 1.5,
                  M1 = 1.0,
                  M2 = 1.0,
-                 k = 2.5):
+                 k = 0.5):
 
         """initial state is (theta, thetaDot, phi, phiDot) in degrees
         where theta is the initial angle of the left pendulum, thetaDot is the initial speed
         of the left pendulum, and phi/phiDot is the same for the right pendulum"""
-        self.init_state = [np.radians(10.0), 0, np.radians(-50.0), 0]
+        self.init_state = [np.radians(25.0), 0, np.radians(0.0), 0]
         self.params = (L1, L2, M1, M2, g, k)
         self.time = np.arange(0, 50.0, 0.025)
 
@@ -115,77 +124,126 @@ class coupledPendulum():
         y1 = -1*cos(self.state[:, 0])*self.params[0]
         x2 = sin(self.state[:, 2])*self.params[1]
         y2 = -1*cos(self.state[:, 2])*self.params[1]
-        return (x1, y1, x2, y2)
+        return x1, y1, x2, y2
 
-def init():
+    def getSpringConstant(self):
+        return self.params[5]
+
+def initSinglePendulumWindow():
     ax.set_xlim(-4.1, 4.1)
     ax.set_ylim(-4.1, 4.1)
-    fig.subplots_adjust(right=.70, left=.11)
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+    ax2.set_xlim(0,50)
+    ax2.set_ylim(-1*pend.getMax(),pend.getMax())
+    ax2.set_ylabel('Angular Displacement')
+    ax2.set_xlabel('time')
+    ax2.set_xticklabels(['',10,20,30,40,''])
+    fig.subplots_adjust(right=.90, left=.10)
+    return line, line2, line4, line5,
+
+def initDoublePendulumWindow():
+    ax.set_xlim(-4.1, 4.1)
+    ax.set_ylim(-4.1, 4.1)
+    ax2.set_visible(False)
+    line.set_color("black")
+    line2.set_color("black")
+    line.set_markerfacecolor("black")
+    line2.set_markerfacecolor("black")
     return line, line2, line3
+
+def initCoupledPendulumWindow():
+    ax.set_xlim(-4.1, 4.1)
+    ax.set_ylim(-4.1, 4.1)
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+    ax2.set_xlim(0,50)
+    ax2.set_ylim(-45,45)
+    line3.set_color("black")
+    ax2.set_xticklabels(['',10,20,30,40,''])
+    ax2.set_ylabel('Angular Displacment')
+    line.set_markerfacecolor("black")
+    line2.set_markerfacecolor("black")
+    line3.set_markerfacecolor("black")
+    return line, line2, line3, line4, line5
 
 pend = Pendulum()
 coupPend = coupledPendulum()
 dubpend = doublePendulum()
-fig = plt.figure()
+
+fig = plt.figure(figsize=(9,8))
 ax = fig.add_subplot(111)
-line, = ax.plot([],[], 'b-', lw=2)
-line2, = ax.plot([],[], 'b-',lw=2)
-line3, = ax.plot([],[], marker='o', markersize=8.0)
-
-#Single Pendulum
-data = pend.solve_ODE()
-final = []
-final.append(data[0])
-final.append(data[1])
-newdata = np.array(final)
-
-#Coupled Pendulum
-data2 = coupPend.solve_ODE()
-final2 = []
-final2.append(data2[0])
-final2.append(data2[1])
-final2.append(data2[2])
-final2.append(data2[3])
-newdata2 = np.array(final2)
-
-#DoublePendulum
-data3 = dubpend.solve_ODE()
-final3 = []
-final3.append(data3[0])
-final3.append(data3[1])
-final3.append(data3[2])
-final3.append(data3[3])
-newdata3 = np.array(final3)
+ax2 = fig.add_subplot(311)
+line, = ax.plot([],[], 'r-', marker='o', lw=2, markersize=10.0, markerfacecolor="red")
+line2, = ax.plot([],[], 'b-', marker='o', lw=2, markersize=10.0, markerfacecolor="blue")
+line3, = ax.plot([],[])
+line4, = ax2.plot([],[], 'r-', lw=1.5)
+line5, = ax2.plot([],[], 'b-', lw=1.5)
+theta_text = ax2.text(0.30, 0.03, 'Phase difference = ', transform = ax.transAxes, fontsize=15)
+time_text = ax.text(0.03, 0.03, 'time = 0s', transform = ax.transAxes, fontsize=15)
+xdata, ydata1, ydata2 = [], [], []
+singlePendulumData = np.array(pend.solve_ODE())
+doublePendulumData = np.array(dubpend.solve_ODE())
+coupledPendulumData = np.array(coupPend.solve_ODE())
 
 #Animation functions for single, double and coupled pendulums
 
-def animateCoupledPendulum(num,data2,line,line2, line3):
+def animateCoupledPendulum(num,data2,line,line2, line3, line4, line5):
     line.set_data([-1, data2[0, num] - 1], [0, data2[1, num]])
     line2.set_data([1, data2[2, num] + 1], [0, data2[3, num]])
     line3.set_data([data2[0, num] -1, data2[2, num] + 1], [data2[1, num], data2[3, num]])
-    return line, line2, line3
+    
+    xdata.append(num/40.0)
+    ydata1.append(np.degrees(np.arctan(data2[0,num]/data2[1,num])))
+    ydata2.append(np.degrees(np.arctan(data2[2,num]/data2[3,num])))
 
-def animateSinglePendulum(num, data1, line, line2, line3):
+    line4.set_data(xdata, ydata1)
+    line5.set_data(xdata, ydata2)
+    
+    theta_text.set_text('Spring Tension: ' + str(abs(round(coupPend.getSpringConstant()*(data2[2,num]-data2[0,num]),1))) + 'N')
+    time_text.set_text('t= ' + str(round(num*0.025,1)) + 's')
+    return line, line2, line3, line4, line5
+
+def animateSinglePendulum(num, data1, line, line2):
+    """draw the two pendulums as lines 1 and 2"""
     line.set_data([0,data1[0,num]], [0,data1[1,num]])
-    #line2.set_data([1,data1[0,num]+1], [0,data1[1,num]])
-    #line3.set_data([data1[0,num]-1, data1[0,num]+1], [data1[1,num],data1[1,num]])
-    return line, line2, line3
+    line2.set_data([0,data1[2,num]], [0,data1[3,num]])
 
-def animateDoublePendulum(num, data3, line, line2):
-    line.set_data([0,data3[0,num]], [0,data3[1,num]])
-    line2.set_data([data3[0,num],data3[2,num]], [data3[1,num],data3[3,num]])
-    ax.plot(data3[2,num], data3[3,num], color='black', marker='o', ms=0.5)
+    """(xdata, ydata) is the (time, angular displacement) of the displacement plot""" 
+    """the time data is the same for both pendulums, so xdata is used both times"""
+    xdata.append(num/40.0)
+    ydata1.append(np.degrees(np.arctan(data1[0,num]/data1[1,num])))
+    ydata2.append(np.degrees(np.arctan(data1[2,num]/data1[3,num])))
+    
+    """line 4 is the plot without the small-angle approximation. line 5 is the plot with the small-angle approximation""" 
+    line4.set_data(xdata,ydata1)
+    line5.set_data(xdata,ydata2)
+
+    """Update the data for the time and phase difference text"""
+    theta_text.set_text('Phase difference = ' + str(int(ydata2[num]-ydata1[num])) + ' degrees')
+    time_text.set_text('t = ' + str(round(num*0.025, 1)) + 's')
+
     return line, line2
 
-ani = animation.FuncAnimation(fig, animateSinglePendulum, interval=1, frames=1000, fargs=(newdata,  line, line2, line3), init_func=init)
+def animateDoublePendulum(num, data3, line, line2, line3):
+    line.set_data([0,data3[0,num]], [0,data3[1,num]])
+    line2.set_data([data3[0,num],data3[2,num]], [data3[1,num],data3[3,num]])
+    
+    xdata.append(data3[2,num])
+    ydata1.append(data3[3,num])
+    line3.set_data(xdata, ydata1)
+    time_text.set_text('t = ' + str(round(num*0.025, 1)) + 's')
+    return line, line2, line3
 
-#ani = animation.FuncAnimation(fig, animateCoupledPendulum, interval=1, frames=5000, fargs=(newdata2,  line, line2, line3), init_func=init)
+#ani = animation.FuncAnimation(fig, animateSinglePendulum, interval=1, frames=2000, fargs=(singlePendulumData, line, line2), init_func=initSinglePendulumWindow, repeat=False)
 
-#ani = animation.FuncAnimation(fig, animateDoublePendulum, interval=1, frames=600, fargs=(newdata3, line, line2), init_func=init)
+#ani = animation.FuncAnimation(fig, animateCoupledPendulum, interval=1, frames=2000, fargs=(coupledPendulumData, line, line2, line3, line4, line5), init_func=initCoupledPendulumWindow, repeat=False)
 
-plt.show()
+ani = animation.FuncAnimation(fig, animateDoublePendulum, interval=1, frames=2000, fargs=(doublePendulumData, line, line2, line3), init_func=initDoublePendulumWindow, repeat=False)
 
-#ani.save('dpen.mp4', fps=30, dpi=150)
+#plt.show()
+
+ani.save('dPend89.mp4', fps=40, dpi=300)
 
 
 
